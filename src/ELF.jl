@@ -231,9 +231,31 @@ module ELF
         file
     end
 
+    function strtable_lookup(io::IO,strtable::ELFSectionHeader,index)
+        seek(io,strtable.sh_offset+index)
+        strip(readuntil(io,'\0'),"\0")
+    end
+
+    name(io::IO,file::ELFFile,symtab::ELFSymtabEntry) = 
+        strtable_lookup(io,file.sheaders[file.header.e_shstrndx+1],symtab.st_name)
+    name(io::IO,file::ELFFile,header::ELFSectionHeader) = 
+        strtable_lookup(io,file.sheaders[file.header.e_shstrndx+1],header.sh_name)
+    names(io,file,headers) = map(x->name(io,file,x),headers)
+
     function read(io::IO,x::Array{Uint8,1},file::ELFFile,header::ELFProgramHeader)
         seek(io,header.p_offset)
         read(io,x)
+    end
+
+    function read(io::IO,x::Array{Uint8,1},file::ELFFile,header::ELFSectionHeader)
+        seek(io,header.sh_offset)
+        read(io,x)
+    end
+
+    function read(io::IO,file::ELFFile,header::ELFSectionHeader)
+        x = Array(Uint8,header.sh_size)
+        read(io,x,file,header)
+        x
     end
 
     function read(io::IO,file::ELFFile,header::ELFProgramHeader)
