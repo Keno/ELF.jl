@@ -263,4 +263,67 @@ module ELF
         read(io,x,file,header)
         x
     end
+
+    # DWARF support
+    function read(io::IO,file::ELFFile,h::ELFSectionHeader,::Type{DWARF.ARTable})
+        seek(io,h.sh_offset)
+        ret = DWARF.ARTable(Array(DWARF.ARTableSet,0))
+        while position(io) < h.sh_offset + h.sh_size
+            push!(ret.sets,read(io,DWARF.ARTableSet,f.endianness))
+        end
+        ret
+    end
+
+    function read(io::IO,file::ELFFile,h::ELFSectionHeader,::Type{DWARF.PUBTable})
+        seek(io,h.sh_offset)
+        ret = DWARF.PUBTable(Array(DWARF.PUBTableSet,0))
+        while position(io) < h.sh_offset + h.sh_size
+            push!(ret.sets,read(io,DWARF.PUBTableSet,f.endianness))
+        end
+        ret
+    end
+
+    function read(io::IO,f::ELFFile,h::ELFSectionHeader,::Type{DWARF.AbbrevTableSet})
+        seek(io,h.sh_offset)
+        read(io,AbbrevTableSet,f.endianness)
+    end
+
+    function read(io::IO,f::ELFFile,h::ELFSectionHeader,s::DWARF.PUBTableSet,::Type{DWARF.DWARFCUHeader})
+        seek(io,h.sh_offset+s.header.debug_info_offset)
+        read(io,DWARF.DWARFCUHeader,f.endianness)
+    end
+
+    function read(io::IO,f::ELFFile,debug_info::ELFSectionHeader,debug_abbrev::ELFSectionHeader,
+        s::DWARF.PUBTableSet,e::DWARF.PUBTableEntry,header::DWARF.DWARFCUHeader,::Type{DWARF.DIE})
+        ats = read(io,f,debug_abbrev,header,DWARF.AbbrevTableSet)
+        seek(io,debug_info.sh_offset+s.header.debug_info_offset+e.offset)
+        read(io,header,ats,DWARF.DIE)
+    end
+
+    function read(io::IO,f::ELFFile,h::ELFSectionHeader,s::DWARF.DWARFCUHeader,::Type{DWARF.AbbrevTableSet})
+        seek(io,h.sh_offset+s.debug_abbrev_offset)
+        read(io,AbbrevTableSet,f.endianness)
+    end
+
+    function debugsections(io::IO,f::ELFFile)
+        snames = names(io,f,f.sheaders)
+        sections = Dict{ASCIIString,ELFSectionHeader}()
+        for i in 1:length(snames)
+            # Remove leading "."
+            ind = findfirst(DEBUG_SECTIONS,snames[i][2:end])
+            if ind != 0
+                sections[DEBUG_SECTIONS[ind]] = f.sheaders[ind]
+            end
+        end
+        sections
+    end
+
+    function read(io::IO,f::ELFFile,debug_info::ELFSectionHeader,debug_abbrev::ELFSectionHeader,
+        s::DWARF.PUBTableSet,e::DWARF.PUBTableEntry,header::DWARF.DWARFCUHeader,::Type{DWARF.DIETree})
+        ats = read(io,f,debug_abbrev,header,DWARF.AbbrevTableSet)
+        seek(io,debug_info.sh_offset+s.header.debug_info_offset+e.offset)
+        ret = DIETree(Array(DWARF.DIETreeNode,0))
+        read(io,header,ats,ret,DWARF.DIETreeNode,f.endianness)
+        ret
+    end
 end
