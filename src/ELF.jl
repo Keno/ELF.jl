@@ -1,6 +1,7 @@
 module ELF
     include("constants.jl")
     using StrPack
+    using DWARF
     import Base.read
 
     abstract ELFHeader
@@ -326,4 +327,23 @@ module ELF
         read(io,header,ats,ret,DWARF.DIETreeNode,f.endianness)
         ret
     end
+
+    immutable dl_phdr_info
+        dlpi_addr::Uint64
+        dlpi_name::Ptr{Uint8}
+        dlpi_phdr::Ptr{Void}
+        dlpi_phnum::Uint16
+    end
+
+    function callback(info::Ptr{dl_phdr_info},size::Csize_t, data::Ptr{Void})
+        push!(unsafe_pointer_to_objref(data),unsafe_load(info))
+        convert(Cint,0)
+    end
+
+    function loaded_libraries()
+        x = Array(dl_phdr_info,0)
+        ccall(:dl_iterate_phdr, Cint, (Ptr{Void}, Any), cfunction(callback, Cint, (Ptr{dl_phdr_info},Csize_t,Ptr{Void})), x)
+        x
+    end
 end
+
