@@ -413,6 +413,9 @@
         end
     end
 
+    link_sec(sec::SectionRef) = Sections(sec.handle)[sec.header.sh_link+1]
+    info_sec(sec::SectionRef) = Sections(sec.handle)[sec.header.sh_info+1]
+
     # # Symbols
     immutable Symbols
         symtab::SectionRef
@@ -425,6 +428,7 @@
         entry::ELFSymtabEntry
     end
     symname(sym::SymbolRef; kwargs...) = symname(sym.entry; kwargs...)
+    deref(ref::SymbolRef) = ref.entry
 
     function symname(sym::ELFSymtabEntry; strtab = nothing, errstrtab = true)
         if strtab == nothing
@@ -512,6 +516,41 @@
     start(s::Symbols) = 1
     done(s::Symbols,n) = n > endof(s)
     next(s::Symbols,n) = (x=s[n];(x,n+1))
+
+    # Access to relocations
+    immutable Relocations{T <: ELFRel}
+        sec::SectionRef
+    end
+    function Relocations(sec::SectionRef)
+        is64 = isa(sec.handle.file,ELF64.File)
+        isRela = sec.header.sh_type == SHT_RELA
+        Relocations{is64 ? (isRela ? ELF64.Rela : ELF64.Rel) : (isRelA ? ELF32.Rela : ELF32.ReL)}(sec)
+    end
+
+    immutable RelocationRef{T <: ELFRel}
+        h::ELFHandle
+        reloc::T
+    end
+
+    deref(x::RelocationRef) = x.reloc
+
+    entrysize{T}(s::Relocations{T}) = StrPack.calcsize(T)
+    endof{T}(s::Relocations{T}) = div(s.sec.header.sh_size,entrysize(s))
+    length(r::Relocations) = endof(r)
+    function getindex{T}(s::Relocations{T},n)
+        if n < 1 || n > length(s)
+            throw(BoundsError())
+        end
+        offset = sectionoffset(s.sec) + (n-1)*entrysize(s)
+        seek(s.sec.handle,offset)
+        RelocationRef{T}(s.sec.handle,unpack(s.sec.handle, T))
+    end
+
+
+    start(s::Relocations) = 1
+    done(s::Relocations,n) = n > length(s)
+    next(s::Relocations,n) = (x=s[n];(x,n+1))
+
 
     # DWARF support
     function read(io::IO,file::ELFFile,h::ELFSectionHeader,::Type{DWARF.ARTable})
@@ -627,5 +666,7 @@
         new_buffer
     end
 
+    # Other things
+    include("relocate.jl")
 end
 
