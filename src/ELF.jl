@@ -8,7 +8,8 @@
     import Base: show, showcompact
     import Base: sizeof
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
-        sectionsize, Section, endianness, replace_sections_from_memory
+        sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
+        getSectionLoadAddress, sectionname
     import StrPack: unpack
 
     abstract ELFFile
@@ -296,7 +297,7 @@
     end
 
     # Access to sections
-    function sectname(header::ELFSectionHeader; strtab = nothing, errstrtab = true)
+    function sectionname(header::ELFSectionHeader; strtab = nothing, errstrtab = true)
         if strtab == nothing
             errstrtab && error("No Strtab given")
             return string("strtab@",header.sh_name)
@@ -314,7 +315,7 @@
     end
 
     function show(io::IO, header::ELFSectionHeader; strtab = nothing, sections = nothing)
-        printentry(io,"Name",sectname(header;strtab=strtab,errstrtab=false))
+        printentry(io,"Name",sectionname(header;strtab=strtab,errstrtab=false))
         printentry(io,"Type",secttype(header.sh_type))
         printentry(io,"Size","0x",hex(header.sh_size))
         printentry(io,"Offset","0x",hex(header.sh_offset))
@@ -322,14 +323,14 @@
         if header.sh_link != 0
             target = ""
             if strtab !== nothing && sections !== nothing
-                target = string(" -> ",sectname(sections[header.sh_link+1].header; strtab = strtab))
+                target = string(" -> ",sectionname(sections[header.sh_link+1].header; strtab = strtab))
             end
             printentry(io,"Link Section",header.sh_link,target)
         end
         if header.sh_link != 0
             target = ""
             if strtab !== nothing && sections !== nothing
-                target = string(" -> ",sectname(sections[header.sh_info+1].header; strtab = strtab))
+                target = string(" -> ",sectionname(sections[header.sh_info+1].header; strtab = strtab))
             end
             printentry(io,"Info Section",header.sh_info,target)
         end
@@ -376,7 +377,7 @@
         handle::ELFHandle
         header::ELFSectionHeader
     end
-    sectname(sec::SectionRef; strtab=load_strtab(sec.handle), errstrtab = true) = sectname(sec.header; strtab = strtab, errstrtab = true)
+    sectionname(sec::SectionRef; strtab=load_strtab(sec.handle), errstrtab = true) = sectionname(sec.header; strtab = strtab, errstrtab = true)
     show(io::IO, sr::SectionRef; strtab = load_strtab(sr.handle), sections = nothing) = show(io,sr.header; strtab = strtab, sections = sections)
     sizeof(s::SectionRef) = sizeof(s.header)
     deref(s::SectionRef) = s.header
@@ -473,7 +474,7 @@
         elseif x.st_shndx == SHN_ABS
             printfield(io,"*ABS*",20; align = :left)
         elseif sections !== nothing
-            printfield(io, sectname(sections[x.st_shndx+1];
+            printfield(io, sectionname(sections[x.st_shndx+1];
                 strtab = shstrtab, errstrtab=true), 20; align = :left)
         else
             printfield(io, "Section #$(x.st_shndx)", 20; align = :left)
@@ -640,7 +641,7 @@
     function debugsections(h::ELFHandle)
         sects = collect(Sections(h))
         strt = strtab(h)
-        snames = map(s->sectname(s.header;strtab=strt),sects)
+        snames = map(s->sectionname(s.header;strtab=strt),sects)
         sections = Dict{ASCIIString,SectionRef}()
         for i in 1:length(snames)
             # remove leading "."
