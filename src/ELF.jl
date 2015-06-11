@@ -9,7 +9,7 @@
     import Base: sizeof
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
         sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
-        getSectionLoadAddress, sectionname
+        getSectionLoadAddress, sectionname, load_strtab
     import StrPack: unpack
 
     abstract ELFFile

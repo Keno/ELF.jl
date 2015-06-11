@@ -18,12 +18,11 @@ end
 
 function compute_value(h, symbols, reloc)
     # Here one could to external symbol lookups, etc, but I'm not interested
-    @show (endof(symbols), r_sym(reloc) + 1)
     deref(symbols[r_sym(reloc) + 1]).st_value
 end
 
 # Apply relocations in `buffer`. `h` should be the buffer being relocated
-function relocate!(buffer, h)
+function relocate!(buffer, h; LOI = nothing)
     sects = Sections(h)
     rel_sects = filter(sects) do sec
         sht = deref(sec).sh_type
@@ -37,11 +36,12 @@ function relocate!(buffer, h)
                 continue
             end
             Value = compute_value(h, symbols, reloc)
-            @show Value
-            SectionLoadAddress = deref(relocated_sec).sh_addr
-            @show SectionLoadAddress
+            if LOI === nothing
+                SectionLoadAddress = deref(relocated_sec).sh_addr
+            else
+                SectionLoadAddress = getSectionLoadAddress(LOI,relocated_sec)
+            end
             rta = compute_relocation(h, reloc, SectionLoadAddress, Value)
-            @show rta
             seek(buffer, deref(relocated_sec).sh_offset + deref(reloc).r_offset)
             write(buffer, rta.size == 8 ? rta.value :
                 rta.size == 4 ? convert(UInt32,rta.value) :
