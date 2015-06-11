@@ -9,7 +9,7 @@
     import Base: sizeof
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
         sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
-        getSectionLoadAddress, sectionname, load_strtab
+        getSectionLoadAddress, sectionname, load_strtab, handle
     import StrPack: unpack
 
     abstract ELFFile
@@ -377,6 +377,7 @@
         handle::ELFHandle
         header::ELFSectionHeader
     end
+    handle(sec::SectionRef) = sec.handle
     sectionname(sec::SectionRef; strtab=load_strtab(sec.handle), errstrtab = true) = sectionname(sec.header; strtab = strtab, errstrtab = true)
     show(io::IO, sr::SectionRef; strtab = load_strtab(sr.handle), sections = nothing) = show(io,sr.header; strtab = strtab, sections = sections)
     sizeof(s::SectionRef) = sizeof(s.header)
