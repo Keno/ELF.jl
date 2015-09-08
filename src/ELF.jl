@@ -1,7 +1,8 @@
-    module ELF
+VERSION >= v"0.4.0-dev+6641" && __precompile__()
+module ELF
     include("constants.jl")
     using StrPack
-    using DWARF
+    using FileIO
     using ObjFileBase
     import Base: start, next, done, endof, length, getindex
     import Base: read, readuntil, write, readbytes, seek, seekstart, position
@@ -37,6 +38,8 @@
     module ELF32
         import ELF
         using StrPack
+        __init__() = @__struct_init__
+
         @struct immutable Header <: ELF.ELFHeader
             e_type::Uint16
             e_machine::Uint16
@@ -111,6 +114,8 @@
     module ELF64
         import ELF
         using StrPack
+        __init__() = @__struct_init__
+
         @struct immutable Header <: ELF.ELFHeader
             e_type::Uint16
             e_machine::Uint16
@@ -200,7 +205,7 @@
         print(io,")")
     end
 
-    for f in (:read,:readuntil,:write)
+    for f in (:readuntil,:write)
         @eval $(f){T<:IO}(io::ELFHandle{T},args...) = $(f)(io.io,args...)
     end
     readbytes{T<:IO}(io::ELFHandle{T},num::Integer) = readbytes(io.io,num)
@@ -248,6 +253,23 @@
         seek(io,start)
         ELFHandle(io,file)
     end
+    FileIO.load(s::Stream{format"ELF"}) = readmeta(stream(s))
+    function FileIO.save(f::File{format"ELF"},oh::ELFHandle)
+        # First we need to calculate the total size of the object file. To this,
+        # iterate through all sections and fine which one (if placed last)
+        # yields the largest object file
+        header = oh.file.header
+        size = max(
+            maximum(map(sec->(sectionoffset(sec)+sectionsize(sec)),Sections(oh))),
+            (header.e_shoff+header.e_shentsize*header.e_shnum))
+        open(f,"w") do s
+            seekstart(oh)
+            write(s,readbytes(oh,size))
+        end
+    end
+    FileIO.save(s::AbstractString,oh::ELFHandle) =
+        save(File{format"ELF"}(s),oh)
+
 
     function read(io::IO,::Type{ELFProgramHeader},f::ELFFile)
         s = StrPack.calcsize(pheader(typeof(f)))
@@ -391,7 +413,8 @@
     immutable Sections
         handle::ELFHandle
     end
-    length(s::Sections) = s.handle.file.header.e_shnum
+    endof(s::Sections) = s.handle.file.header.e_shnum
+    length(s::Sections) = endof(s)
     function getindex(s::Sections, n)
         file = s.handle.file
         seek(s.handle,file.header.e_shoff + (n-1)*file.header.e_shentsize)
@@ -529,7 +552,7 @@
         Relocations{is64 ? (isRela ? ELF64.Rela : ELF64.Rel) : (isRelA ? ELF32.Rela : ELF32.ReL)}(sec)
     end
 
-    immutable RelocationRef{T <: ELFRel}
+    immutable RelocationRef{T <: ELFRel} <: ObjFileBase.RelocationRef{ELFHandle}
         h::ELFHandle
         reloc::T
     end
@@ -555,6 +578,7 @@
 
 
     # DWARF support
+    #=
     function read(io::IO,file::ELFFile,h::ELFSectionHeader,::Type{DWARF.ARTable})
         seek(io,h.sh_offset)
         ret = DWARF.ARTable(Array(DWARF.ARTableSet,0))
@@ -616,6 +640,7 @@
         read(io,header,ats,ret,DWARF.DIETreeNode,f.endianness)
         ret
     end
+    =#
 
     immutable dl_phdr_info
         dlpi_addr::Uint64
@@ -636,9 +661,6 @@
     end
 
     ## DWARF Support
-
-    using DWARF
-
     function debugsections(h::ELFHandle)
         sects = collect(Sections(h))
         strt = strtab(h)
@@ -646,9 +668,9 @@
         sections = Dict{ASCIIString,SectionRef}()
         for i in 1:length(snames)
             # remove leading "."
-            ind = findfirst(DWARF.DEBUG_SECTIONS,bytestring(snames[i])[2:end])
+            ind = findfirst(ObjFileBase.DEBUG_SECTIONS,bytestring(snames[i])[2:end])
             if ind != 0
-                sections[DWARF.DEBUG_SECTIONS[ind]] = sects[i]
+                sections[ObjFileBase.DEBUG_SECTIONS[ind]] = sects[i]
             end
         end
         ObjFileBase.DebugSections(h,sections)
@@ -671,4 +693,3 @@
     # Other things
     include("relocate.jl")
 end
-
