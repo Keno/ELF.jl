@@ -1,10 +1,10 @@
 # Utilities for extracting information from relocation entries
-r_sym(rel::Union(ELF32.Rel,ELF32.Rela)) = rel.r_info >> 8
-r_type(rel::Union(ELF32.Rel,ELF32.Rela)) = rel.r_info % UInt8
-r_sym(rel::Union(ELF64.Rel,ELF64.Rela)) = rel.r_info >> 32
-r_type(rel::Union(ELF64.Rel,ELF64.Rela)) = rel.r_info % Uint32
-addend(rel::Union(ELF32.Rela,ELF64.Rela)) = rel.r_addend
-addend(rel::Union(ELF32.Rel,ELF64.Rel)) = 0
+r_sym(rel::Union{ELF32.Rel,ELF32.Rela}) = rel.r_info >> 8
+r_type(rel::Union{ELF32.Rel,ELF32.Rela}) = rel.r_info % UInt8
+r_sym(rel::Union{ELF64.Rel,ELF64.Rela}) = rel.r_info >> 32
+r_type(rel::Union{ELF64.Rel,ELF64.Rela}) = rel.r_info % Uint32
+addend(rel::Union{ELF32.Rela,ELF64.Rela}) = rel.r_addend
+addend(rel::Union{ELF32.Rel,ELF64.Rel}) = 0
 
 r_sym(x) = r_sym(deref(x))
 r_type(x) = r_type(deref(x))
@@ -13,7 +13,7 @@ addend(x) = addend(deref(x))
 # The relocation to apply
 immutable RelocToApply
     value::UInt64
-    size::Uint8
+    size::UInt8
 end
 
 function compute_value(h, symbols, reloc)

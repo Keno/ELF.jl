@@ -41,69 +41,69 @@ module ELF
         __init__() = @__struct_init__
 
         @struct immutable Header <: ELF.ELFHeader
-            e_type::Uint16
-            e_machine::Uint16
-            e_version::Uint32
-            e_entry::Uint32
-            e_phoff::Uint32
-            e_shoff::Uint32
-            e_flags::Uint32
-            e_ehsize::Uint16
-            e_phentsize::Uint16
-            e_phnum::Uint16
-            e_shentsize::Uint16
-            e_shnum::Uint16
-            e_shstrndx::Uint16
+            e_type::UInt16
+            e_machine::UInt16
+            e_version::UInt32
+            e_entry::UInt32
+            e_phoff::UInt32
+            e_shoff::UInt32
+            e_flags::UInt32
+            e_ehsize::UInt16
+            e_phentsize::UInt16
+            e_phnum::UInt16
+            e_shentsize::UInt16
+            e_shnum::UInt16
+            e_shstrndx::UInt16
         end
 
         @struct immutable SectionHeader <: ELF.ELFSectionHeader
-            sh_name::Uint32
-            sh_type::Uint32
-            sh_flags::Uint32
-            sh_addr::Uint32
-            sh_offset::Uint32
-            sh_size::Uint32
-            sh_link::Uint32
-            sh_info::Uint32
-            sh_addralign::Uint32
-            sh_entsize::Uint32
+            sh_name::UInt32
+            sh_type::UInt32
+            sh_flags::UInt32
+            sh_addr::UInt32
+            sh_offset::UInt32
+            sh_size::UInt32
+            sh_link::UInt32
+            sh_info::UInt32
+            sh_addralign::UInt32
+            sh_entsize::UInt32
         end
 
         @struct immutable SymtabEntry <: ELF.ELFSymtabEntry
-            st_name::Uint32
-            st_value::Uint32
-            st_size::Uint32
-            st_info::Uint8
-            st_other::Uint8
-            st_shndx::Uint16
+            st_name::UInt32
+            st_value::UInt32
+            st_size::UInt32
+            st_info::UInt8
+            st_other::UInt8
+            st_shndx::UInt16
         end
 
         @struct immutable Rel <: ELF.ELFRel
-            r_offset::Uint32
-            r_info::Uint32
+            r_offset::UInt32
+            r_info::UInt32
         end
 
         @struct immutable Rela <: ELF.ELFRel
-            r_offset::Uint32
-            r_info::Uint32
+            r_offset::UInt32
+            r_info::UInt32
             r_addend::Int32
         end
 
         @struct immutable ProgramHeader <: ELF.ELFProgramHeader
-            p_type::Uint32
-            p_offset::Uint32
-            p_vaddr::Uint32
-            p_paddr::Uint32
-            p_filesz::Uint32
-            p_memsz::Uint32
-            p_flags::Uint32
-            p_align::Uint32
+            p_type::UInt32
+            p_offset::UInt32
+            p_vaddr::UInt32
+            p_paddr::UInt32
+            p_filesz::UInt32
+            p_memsz::UInt32
+            p_flags::UInt32
+            p_align::UInt32
         end
 
         type File <: ELF.ELFFile
             endianness::Symbol
-            ei_version::Uint8
-            ei_osabi::Uint8
+            ei_version::UInt8
+            ei_osabi::UInt8
             header::Header
         end
         ELF.sheader(::Type{File}) = SectionHeader
@@ -117,69 +117,69 @@ module ELF
         __init__() = @__struct_init__
 
         @struct immutable Header <: ELF.ELFHeader
-            e_type::Uint16
-            e_machine::Uint16
-            e_version::Uint32
-            e_entry::Uint64
-            e_phoff::Uint64
-            e_shoff::Uint64
-            e_flags::Uint32
-            e_ehsize::Uint16
-            e_phentsize::Uint16
-            e_phnum::Uint16
-            e_shentsize::Uint16
-            e_shnum::Uint16
-            e_shstrndx::Uint16
+            e_type::UInt16
+            e_machine::UInt16
+            e_version::UInt32
+            e_entry::UInt64
+            e_phoff::UInt64
+            e_shoff::UInt64
+            e_flags::UInt32
+            e_ehsize::UInt16
+            e_phentsize::UInt16
+            e_phnum::UInt16
+            e_shentsize::UInt16
+            e_shnum::UInt16
+            e_shstrndx::UInt16
         end
 
         @struct immutable SectionHeader <: ELF.ELFSectionHeader
-            sh_name::Uint32
-            sh_type::Uint32
-            sh_flags::Uint64
-            sh_addr::Uint64
-            sh_offset::Uint64
-            sh_size::Uint64
-            sh_link::Uint32
-            sh_info::Uint32
-            sh_addralign::Uint64
-            sh_entsize::Uint64
+            sh_name::UInt32
+            sh_type::UInt32
+            sh_flags::UInt64
+            sh_addr::UInt64
+            sh_offset::UInt64
+            sh_size::UInt64
+            sh_link::UInt32
+            sh_info::UInt32
+            sh_addralign::UInt64
+            sh_entsize::UInt64
         end
 
         @struct immutable SymtabEntry <: ELF.ELFSymtabEntry
-            st_name::Uint32
-            st_info::Uint8
-            st_other::Uint8
-            st_shndx::Uint16
-            st_value::Uint32
-            st_size::Uint64
+            st_name::UInt32
+            st_info::UInt8
+            st_other::UInt8
+            st_shndx::UInt16
+            st_value::UInt32
+            st_size::UInt64
         end
 
         @struct immutable Rel <: ELF.ELFRel
-            r_offset::Uint64
-            r_info::Uint64
+            r_offset::UInt64
+            r_info::UInt64
         end
 
         @struct immutable Rela <: ELF.ELFRel
-            r_offset::Uint64
-            r_info::Uint64
+            r_offset::UInt64
+            r_info::UInt64
             r_addend::Int64
         end
 
         @struct immutable ProgramHeader <: ELF.ELFProgramHeader
-            p_type::Uint32
-            p_flags::Uint32
-            p_offset::Uint64
-            p_vaddr::Uint64
-            p_paddr::Uint64
-            p_filesz::Uint64
-            p_memsz::Uint64
-            p_align::Uint64
+            p_type::UInt32
+            p_flags::UInt32
+            p_offset::UInt64
+            p_vaddr::UInt64
+            p_paddr::UInt64
+            p_filesz::UInt64
+            p_memsz::UInt64
+            p_align::UInt64
         end
 
         type File <: ELF.ELFFile
             endianness::Symbol
-            ei_version::Uint8
-            ei_osabi::Uint8
+            ei_version::UInt8
+            ei_osabi::UInt8
             header::Header
         end
         ELF.sheader(::Type{File}) = SectionHeader
@@ -216,7 +216,7 @@ module ELF
     endianness(h::ELFHandle) = h.file.endianness
 
 
-    function endianness(ei_data::Uint8)
+    function endianness(ei_data::UInt8)
         if ei_data == ELFDATA2MSB
             :BigEndian
         elseif ei_data == ELFDATA2LSB
@@ -228,18 +228,18 @@ module ELF
 
     function readmeta(io::IO,::Type{ELFHandle})
         start = position(io)
-        mag0 = read(io,Uint8)
-        mag1 = read(io,Uint8)
-        mag2 = read(io,Uint8)
-        mag3 = read(io,Uint8)
+        mag0 = read(io,UInt8)
+        mag1 = read(io,UInt8)
+        mag2 = read(io,UInt8)
+        mag3 = read(io,UInt8)
         if((mag0 != '\177') || (mag1 != 'E') || (mag2 != 'L') || (mag3 != 'F'))
             throw(ObjFileBase.MagicMismatch("Magic Number does not match"))
         end
-        class = read(io,Uint8)
-        data = read(io,Uint8)
-        version = read(io,Uint8)
-        osabi = read(io,Uint8)
-        abiversion = read(io,Uint8)
+        class = read(io,UInt8)
+        data = read(io,UInt8)
+        version = read(io,UInt8)
+        osabi = read(io,UInt8)
+        abiversion = read(io,UInt8)
         skip(io,7)
         if class == ELFCLASS32
             header = unpack(io,ELF32.Header,endianness(data))
@@ -296,24 +296,24 @@ module ELF
         strip(readuntil(io,'\0'),'\0')
     end
 
-    function read(io::IO,x::Array{Uint8,1},file::ELFFile,header::ELFProgramHeader)
+    function read(io::IO,x::Array{UInt8,1},file::ELFFile,header::ELFProgramHeader)
         seek(io,header.p_offset)
         read(io,x)
     end
 
-    function read(io::IO,x::Array{Uint8,1},file::ELFFile,header::ELFSectionHeader)
+    function read(io::IO,x::Array{UInt8,1},file::ELFFile,header::ELFSectionHeader)
         seek(io,header.sh_offset)
         read(io,x)
     end
 
     function read(io::IO,file::ELFFile,header::ELFSectionHeader)
-        x = Array(Uint8,header.sh_size)
+        x = Array(UInt8,header.sh_size)
         read(io,x,file,header)
         x
     end
 
     function read(io::IO,file::ELFFile,header::ELFProgramHeader)
-        x = Array(Uint8,header.p_filesz)
+        x = Array(UInt8,header.p_filesz)
         read(io,x,file,header)
         x
     end
@@ -329,7 +329,7 @@ module ELF
 
     sizeof(header::ELFSectionHeader) = header.sh_size
 
-    function secttype(sh_type::Uint32)
+    function secttype(sh_type::UInt32)
         if haskey(SHT_TYPES, sh_type)
             return SHT_TYPES[sh_type]
         end
@@ -448,7 +448,7 @@ module ELF
 
     immutable SymbolRef <: ObjFileBase.SymbolRef{ELFHandle}
         handle::ELFHandle
-        num::Uint16
+        num::UInt16
         offset::Int
         entry::ELFSymtabEntry
     end
@@ -643,10 +643,10 @@ module ELF
     =#
 
     immutable dl_phdr_info
-        dlpi_addr::Uint64
-        dlpi_name::Ptr{Uint8}
+        dlpi_addr::UInt64
+        dlpi_name::Ptr{UInt8}
         dlpi_phdr::Ptr{Void}
-        dlpi_phnum::Uint16
+        dlpi_phnum::UInt16
     end
 
     function callback(info::Ptr{dl_phdr_info},size::Csize_t, data::Ptr{Void})
@@ -682,7 +682,7 @@ module ELF
             if ObjFileBase.is_jit_section(sec)
                 seek(new_buffer,sectionoffset(sec))
                 write(new_buffer,pointer_to_array(
-                    reinterpret(Ptr{Uint8},sectionaddress(sec)),
+                    reinterpret(Ptr{UInt8},sectionaddress(sec)),
                     sectionsize(sec),false))
             end
         end
