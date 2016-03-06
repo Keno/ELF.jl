@@ -2,7 +2,7 @@
 r_sym(rel::Union{ELF32.Rel,ELF32.Rela}) = rel.r_info >> 8
 r_type(rel::Union{ELF32.Rel,ELF32.Rela}) = rel.r_info % UInt8
 r_sym(rel::Union{ELF64.Rel,ELF64.Rela}) = rel.r_info >> 32
-r_type(rel::Union{ELF64.Rel,ELF64.Rela}) = rel.r_info % Uint32
+r_type(rel::Union{ELF64.Rel,ELF64.Rela}) = rel.r_info % UInt32
 addend(rel::Union{ELF32.Rela,ELF64.Rela}) = rel.r_addend
 addend(rel::Union{ELF32.Rel,ELF64.Rel}) = 0
 
@@ -65,11 +65,12 @@ function compute_X86_64(reloc, SectionLoadAddress, Value)
     # value (the conversions are checked)
     kind = r_type(reloc)
     Offset = deref(reloc).r_offset
-    Value += addend(reloc)
+    Addend = addend(reloc)
+    Value += Addend
     if kind == R_X86_64_64
         return RelocToApply(Value, 8)
     elseif kind == R_X86_64_32
-        return RelocToApply(convert(Uint32,Value), 4)
+        return RelocToApply(convert(UInt32,Value), 4)
     elseif kind == R_X86_64_32S
         return RelocToApply(convert(Int32,reinterpret(Int,Value)), 4)
     else
@@ -78,8 +79,12 @@ function compute_X86_64(reloc, SectionLoadAddress, Value)
             return RelocToApply(PCOffset, 8)
         elseif kind == R_X86_64_PC32
             return RelocToApply(convert(Int32,PCOffset), 4)
+        elseif kind == R_X86_64_GLOB_DAT || kind == R_X86_64_JUMP_SLOT
+            return RelocToApply(Value, 8)
+        elseif kind == R_X86_64_RELATIVE
+            return RelocToApply(Addend #= + LoadAddress =#, 8) 
         else
-            error("Unknown relocation ($(R_X86_64[kind])")
+            error("Unknown relocation ($(R_X86_64[kind]))")
         end
     end
 end

@@ -403,9 +403,10 @@ module ELF
     sizeof(s::SectionRef) = sizeof(s.header)
     deref(s::SectionRef) = s.header
 
-    immutable StrTab
+    immutable StrTab <: ObjFileBase.StrTab
         strtab::SectionRef
     end
+    call(::Type{ObjFileBase.StrTab},strtab::SectionRef) = StrTab(strtab)
     strtab_lookup(s::StrTab,index) = strtab_lookup(s.strtab.handle,s.strtab.header,index)
 
     immutable Sections
