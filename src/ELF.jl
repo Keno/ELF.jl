@@ -38,7 +38,6 @@ module ELF
     module ELF32
         import ELF
         using StrPack
-        __init__() = @__struct_init__
 
         @struct immutable Header <: ELF.ELFHeader
             e_type::UInt16
@@ -114,7 +113,6 @@ module ELF
     module ELF64
         import ELF
         using StrPack
-        __init__() = @__struct_init__
 
         @struct immutable Header <: ELF.ELFHeader
             e_type::UInt16
@@ -471,6 +469,14 @@ module ELF
     isweak(x) = (st_bind(x.st_info) & STB_WEAK) != 0
     isdebug(x) = false
 
+    # Symbol printing stuff
+    function showcompact(io::IO, x::SymbolRef; shstrtab = load_strtab(handle(x)), strtab = nothing, sections = Sections(handle(x)))
+        print(io,'[')
+        printfield(io,dec(symbolnum(x)),5)
+        print(io,"] ")
+        showcompact(io, x.entry; shstrtab = shstrtab, strtab = strtab, sections = sections)
+    end
+
     # Try to follow the same format as llvm-objdump
     function showcompact(io::IO,x::ELFSymtabEntry; shstrtab = nothing, strtab = nothing, sections = nothing)
         # Value
@@ -508,7 +514,7 @@ module ELF
         print(io,symname(x; strtab = strtab, errstrtab = false))
     end
 
-    function showcompact(io::IO,x::SymbolRef; shstrtab = load_strtab(x.handle), strtab = nothing, sections = Sections(x.handle))
+    function showcompact(io::IO, x::SymbolRef; shstrtab = load_strtab(x.handle), strtab = nothing, sections = Sections(x.handle))
         print(io,'[')
         printfield(io,dec(x.num),5)
         print(io,"] ")
@@ -549,7 +555,7 @@ module ELF
     function Relocations(sec::SectionRef)
         is64 = isa(sec.handle.file,ELF64.File)
         isRela = sec.header.sh_type == SHT_RELA
-        Relocations{is64 ? (isRela ? ELF64.Rela : ELF64.Rel) : (isRelA ? ELF32.Rela : ELF32.ReL)}(sec)
+        Relocations{is64 ? (isRela ? ELF64.Rela : ELF64.Rel) : (isRela ? ELF32.Rela : ELF32.Rel)}(sec)
     end
 
     immutable RelocationRef{T <: ELFRel} <: ObjFileBase.RelocationRef{ELFHandle}
