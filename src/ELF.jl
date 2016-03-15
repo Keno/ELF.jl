@@ -402,6 +402,7 @@ module ELF
     show(io::IO, sr::SectionRef; strtab = load_strtab(sr.handle), sections = nothing) = show(io,sr.header; strtab = strtab, sections = sections)
     sizeof(s::SectionRef) = sizeof(s.header)
     deref(s::SectionRef) = s.header
+    seek(s::SectionRef, offs) = seek(s.handle, sectionoffset(s) + offs)
 
     immutable StrTab <: ObjFileBase.StrTab
         strtab::SectionRef
