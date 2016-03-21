@@ -347,12 +347,16 @@ module ELF
             end
             printentry(io,"Link Section",header.sh_link,target)
         end
-        if header.sh_link != 0
-            target = ""
-            if strtab !== nothing && sections !== nothing
-                target = string(" -> ",sectionname(sections[header.sh_info+1].header; strtab = strtab))
+        if header.sh_info != 0
+            if header.sh_type == SHT_REL || header.sh_type == SHT_RELA
+                target = ""
+                if strtab !== nothing && sections !== nothing
+                    target = string(" -> ",sectionname(sections[header.sh_info+1].header; strtab = strtab))
+                end
+                printentry(io,"Info Section",header.sh_info,target)
+            elseif header.sh_type == SHT_SYMTAB || header.sh_type == SHT_DYNSYM
+                printentry(io,"Last Local Idx",header.sh_info)
             end
-            printentry(io,"Info Section",header.sh_info,target)
         end
         flags = ASCIIString[]
         for (k,v) in SHF_FLAGS
@@ -416,6 +420,7 @@ module ELF
     endof(s::Sections) = s.handle.file.header.e_shnum
     length(s::Sections) = endof(s)
     function getindex(s::Sections, n)
+        @assert 0 < n <= length(s)
         file = s.handle.file
         seek(s.handle,file.header.e_shoff + (n-1)*file.header.e_shentsize)
         SectionRef(s.handle, read(s.handle,ELFSectionHeader,file))
