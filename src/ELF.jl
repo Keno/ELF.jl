@@ -1,7 +1,7 @@
 VERSION >= v"0.4.0-dev+6641" && __precompile__()
 module ELF
     include("constants.jl")
-    using StrPack
+    using StructIO
     using FileIO
     using ObjFileBase
     import Base: start, next, done, endof, length, getindex
@@ -11,7 +11,7 @@ module ELF
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
         sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
         getSectionLoadAddress, sectionname, load_strtab, handle
-    import StrPack: unpack
+    import StructIO: unpack
 
     abstract ELFFile
 
@@ -37,7 +37,7 @@ module ELF
 
     module ELF32
         import ELF
-        using StrPack
+        using StructIO
 
         @struct immutable Header <: ELF.ELFHeader
             e_type::UInt16
@@ -112,7 +112,7 @@ module ELF
 
     module ELF64
         import ELF
-        using StrPack
+        using StructIO
 
         @struct immutable Header <: ELF.ELFHeader
             e_type::UInt16
@@ -270,7 +270,7 @@ module ELF
 
 
     function read(io::IO,::Type{ELFProgramHeader},f::ELFFile)
-        s = StrPack.calcsize(pheader(typeof(f)))
+        s = sizeof(pheader(typeof(f)))
         if s > f.header.e_phentsize
             error("Missing data for program header")
         end
@@ -280,7 +280,7 @@ module ELF
     end
 
     function read(io::IO,::Type{ELFSectionHeader},f::ELFFile)
-        s = StrPack.calcsize(sheader(typeof(f)))
+        s = sizeof(sheader(typeof(f)))
         if s > f.header.e_shentsize
             error("Missing data for section header")
         end
@@ -459,6 +459,7 @@ module ELF
     end
     symname(sym::SymbolRef; kwargs...) = symname(sym.entry; kwargs...)
     deref(ref::SymbolRef) = ref.entry
+    symbolnum(ref::SymbolRef) = ref.num
 
     function symname(sym::ELFSymtabEntry; strtab = nothing, errstrtab = true)
         if strtab == nothing
@@ -521,13 +522,6 @@ module ELF
         print(io,symname(x; strtab = strtab, errstrtab = false))
     end
 
-    function showcompact(io::IO, x::SymbolRef; shstrtab = load_strtab(x.handle), strtab = nothing, sections = Sections(x.handle))
-        print(io,'[')
-        printfield(io,dec(x.num),5)
-        print(io,"] ")
-        showcompact(io,x.entry; shstrtab = shstrtab, strtab=strtab, sections = sections)
-    end
-
     function show(io::IO, s::Symbols)
         h = s.symtab.handle
         shstrtab = strtab(h)
@@ -538,8 +532,7 @@ module ELF
         end
     end
 
-    SymtabEntrySize(s::Symbols) =
-        StrPack.calcsize(symtype(typeof(s.symtab.header)))
+    SymtabEntrySize(s::Symbols) = sizeof(symtype(typeof(s.symtab.header)))
     endof(s::Symbols) = div(s.symtab.header.sh_size,SymtabEntrySize(s))
     function getindex(s::Symbols,n)
         if n < 1 || n > endof(s)
@@ -572,7 +565,7 @@ module ELF
 
     deref(x::RelocationRef) = x.reloc
 
-    entrysize{T}(s::Relocations{T}) = StrPack.calcsize(T)
+    entrysize{T}(s::Relocations{T}) = sizeof(T)
     endof{T}(s::Relocations{T}) = div(s.sec.header.sh_size,entrysize(s))
     length(r::Relocations) = endof(r)
     function getindex{T}(s::Relocations{T},n)
