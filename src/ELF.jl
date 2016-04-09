@@ -10,7 +10,7 @@ module ELF
     import Base: sizeof
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
         sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
-        getSectionLoadAddress, sectionname, load_strtab, handle
+        getSectionLoadAddress, sectionname, load_strtab, handle, symname
     import StructIO: unpack
 
     abstract ELFFile
@@ -23,6 +23,7 @@ module ELF
         start::Int
         file::ELFFile
     end
+    Base.eof(handle::ELFHandle) = eof(handle.io)
 
     abstract ELFHeader
     abstract ELFSectionHeader <: Section{ELFHandle}
@@ -106,7 +107,7 @@ module ELF
             header::Header
         end
         ELF.sheader(::Type{File}) = SectionHeader
-        ELF.pheader(::Type{File}) = ProgamHeader
+        ELF.pheader(::Type{File}) = ProgramHeader
         ELF.symtype(::Type{SectionHeader}) = SymtabEntry
     end
 
@@ -181,7 +182,7 @@ module ELF
             header::Header
         end
         ELF.sheader(::Type{File}) = SectionHeader
-        ELF.pheader(::Type{File}) = ProgamHeader
+        ELF.pheader(::Type{File}) = ProgramHeader
         ELF.symtype(::Type{SectionHeader}) = SymtabEntry
     end
 
@@ -274,7 +275,7 @@ module ELF
         if s > f.header.e_phentsize
             error("Missing data for program header")
         end
-        ret = unpack(io,sheader(typeof(f)),f.endianness)
+        ret = unpack(io,pheader(typeof(f)),f.endianness)
         skip(io,f.header.e_phentsize-s)
         ret
     end
@@ -314,6 +315,34 @@ module ELF
         x = Array(UInt8,header.p_filesz)
         read(io,x,file,header)
         x
+    end
+
+    # Program Header iteration
+    immutable ProgramHeaders
+        handle::ELFHandle
+    end
+    handle(phs::ProgramHeaders) = phs.handle
+    endof(phs::ProgramHeaders) = handle(phs).file.header.e_phnum
+    length(phs::ProgramHeaders) = endof(phs)
+    start(phs::ProgramHeaders) = 1
+    done(phs::ProgramHeaders,n) = n > length(phs)
+    next(phs::ProgramHeaders,n) = (phs[n],n+1)
+    function getindex(phs::ProgramHeaders, n)
+        @assert 0 < n <= length(phs)
+        file = handle(phs).file
+        seek(handle(phs),file.header.e_phoff + (n-1)*file.header.e_phentsize)
+        read(handle(phs),ELFProgramHeader,file)
+    end
+
+    function show(io::IO, header::ELFProgramHeader; strtab = nothing, sections = nothing)
+        printentry(io,"Type",P_TYPE[header.p_type])
+        printentry(io,"Offset","0x",hex(header.p_offset))
+        printentry(io,"Virtual Address","0x",hex(header.p_vaddr))
+        printentry(io,"Physical Address","0x",hex(header.p_paddr))
+        printentry(io,"Size in File","0x",hex(header.p_filesz))
+        printentry(io,"Size in Memory","0x",hex(header.p_memsz))
+        printentry(io,"Flags","0x",hex(header.p_flags))
+        printentry(io,"Align","0x",hex(header.p_align))
     end
 
     # Access to sections
@@ -407,6 +436,8 @@ module ELF
     sizeof(s::SectionRef) = sizeof(s.header)
     deref(s::SectionRef) = s.header
     seek(s::SectionRef, offs) = seek(s.handle, sectionoffset(s) + offs)
+    Base.seekstart(s::SectionRef) = seek(handle(s), sectionoffset(s))
+    Base.read(s::SectionRef) = (seek(s,0); read(s.handle.io, sectionsize(s)))
 
     immutable StrTab <: ObjFileBase.StrTab
         strtab::SectionRef
@@ -450,14 +481,20 @@ module ELF
     immutable Symbols
         symtab::SectionRef
     end
+    handle(s::Symbols) = handle(s.symtab)
+    Symbols(h::ELFHandle) =
+        Symbols(first(filter(x->sectionname(x) in (".dynsym",".symtab"),Sections(h))))
+    ObjFileBase.StrTab(symtab::Symbols) = StrTab(symtab)
+    StrTab(symtab::Symbols) = StrTab(link_sec(symtab.symtab))
 
     immutable SymbolRef <: ObjFileBase.SymbolRef{ELFHandle}
-        handle::ELFHandle
+        syms::Symbols
         num::UInt16
         offset::Int
         entry::ELFSymtabEntry
     end
-    symname(sym::SymbolRef; kwargs...) = symname(sym.entry; kwargs...)
+    handle(sym::SymbolRef) = handle(sym.syms)
+    symname(sym::SymbolRef; strtab = StrTab(sym.syms), kwargs...) = symname(sym.entry; strtab=strtab, kwargs...)
     deref(ref::SymbolRef) = ref.entry
     symbolnum(ref::SymbolRef) = ref.num
 
@@ -476,14 +513,16 @@ module ELF
     islocal(x) = !isglobal(x)
     isweak(x) = (st_bind(x.st_info) & STB_WEAK) != 0
     isdebug(x) = false
+    isundef(x) = deref(x).st_shndx == SHN_UNDEF
 
     # Symbol printing stuff
-    function showcompact(io::IO, x::SymbolRef; shstrtab = load_strtab(handle(x)), strtab = nothing, sections = Sections(handle(x)))
+    function showcompact(io::IO, x::SymbolRef; shstrtab = load_strtab(handle(x)), strtab = StrTab(x.syms), sections = Sections(handle(x)))
         print(io,'[')
         printfield(io,dec(symbolnum(x)),5)
         print(io,"] ")
         showcompact(io, x.entry; shstrtab = shstrtab, strtab = strtab, sections = sections)
     end
+    show(io::IO, x::SymbolRef) = showcompact(io, x)
 
     # Try to follow the same format as llvm-objdump
     function showcompact(io::IO,x::ELFSymtabEntry; shstrtab = nothing, strtab = nothing, sections = nothing)
@@ -541,12 +580,13 @@ module ELF
         h = s.symtab.handle
         offset = s.symtab.header.sh_offset + (n-1)*SymtabEntrySize(s)
         seek(h,offset)
-        SymbolRef(h,n,offset,unpack(h, symtype(typeof(s.symtab.header))))
+        SymbolRef(s,n,offset,unpack(h, symtype(typeof(s.symtab.header))))
     end
 
     start(s::Symbols) = 1
     done(s::Symbols,n) = n > endof(s)
     next(s::Symbols,n) = (x=s[n];(x,n+1))
+    length(s::Symbols) = endof(s)
 
     # Access to relocations
     immutable Relocations{T <: ELFRel}

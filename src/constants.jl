@@ -242,7 +242,7 @@ const SHN_LOPROC  = 0xff00
 const SHN_HIPROC  = 0xff1f
 const SHN_LOOS    = 0xff20
 const SHN_HIOS    = 0xff3f
-const SHN_ABS = 0xfff1
+const SHN_ABS     = 0xfff1
 const SHN_COMMON  = 0xfff2
 const SHN_XINDEX  = 0xffff
 const SHN_HIRESERVE   = 0xffff
@@ -328,18 +328,24 @@ const STV_HIDDEN  = 2
 const STV_PROTECTED   = 3
  
 # ptype constants
-const PT_NULL = 0
-const PT_LOAD = 1
-const PT_DYNAMIC  = 2
-const PT_INTERP   = 3
-const PT_NOTE = 4
-const PT_SHLIB    = 5
-const PT_PHDR = 6
-const PT_TLS  = 7
-const PT_LOOS = 0x60000000
-const PT_HIOS = 0x6fffffff
-const PT_LOPROC   = 0x70000000
-const PT_HIPROC   = 0x7fffffff
+@constants P_TYPE "PT_" begin
+    const PT_NULL           = 0
+    const PT_LOAD           = 1
+    const PT_DYNAMIC        = 2
+    const PT_INTERP         = 3
+    const PT_NOTE           = 4
+    const PT_SHLIB          = 5
+    const PT_PHDR           = 6
+    const PT_TLS            = 7
+    const PT_LOOS           = 0x60000000
+    const PT_GNU_EH_FRAME   = 0x6474e550
+    const PT_GNU_STACK      = 0x6474e551
+    const PT_GNU_RELRO      = 0x6474e552
+    const PT_PAX_FLAGS      = 0x65041580
+    const PT_HIOS           = 0x6fffffff
+    const PT_LOPROC         = 0x70000000
+    const PT_HIPROC         = 0x7fffffff
+end
  
 # p_flags constants
 const PF_X    = 0x1 #Execute
@@ -388,4 +394,80 @@ const PF_MASKPROC = 0xf0000000  #Unspecified
     const R_X86_64_TLSDESC_CALL      =  35
     const R_X86_64_TLSDESC           =  36
     const R_X86_64_IRELATIVE         =  37
+end
+
+@constants AUXV_TYPE "AT_" begin
+    const AT_NULL         = 0
+    const AT_IGNORE       = 1
+    const AT_EXECFD       = 2
+    const AT_PHDR         = 3
+    const AT_PHENT        = 4
+    const AT_PHNUM        = 5
+    const AT_PAGESZ       = 6
+    const AT_BASE         = 7
+    const AT_FLAGS        = 8
+    const AT_ENTRY        = 9
+    const AT_NOTELF       = 10
+    const AT_UID          = 11
+    const AT_EUID         = 12
+    const AT_GID          = 13
+    const AT_EGID         = 14
+    const AT_PLATFORM     = 15
+    const AT_HWCAP        = 16
+    const AT_CLKTCK       = 17
+    const AT_SYSINFO      = 32
+    const AT_SYSINFO_EHDR = 33
+end
+
+@constants DYNAMIC_TYPE "DT_" begin
+    const DT_NULL         = 0
+    const DT_NEEDED       = 1
+    const DT_PLTRELSZ     = 2
+    const DT_PLTGOT       = 3
+    const DT_HASH         = 4
+    const DT_STRTAB       = 5
+    const DT_SYMTAB       = 6
+    const DT_RELA         = 7
+    const DT_RELASZ       = 8
+    const DT_RELAENT      = 9
+    const DT_STRSZ        = 10
+    const DT_SYMENT       = 11
+    const DT_INIT         = 12
+    const DT_FINI         = 13
+    const DT_SONAME       = 14
+    const DT_RPATH        = 15
+    const DT_SYMBOLIC     = 16
+    const DT_REL          = 17
+    const DT_RELSZ        = 18
+    const DT_RELENT       = 19
+    const DT_PLTREL       = 20
+    const DT_DEBUG        = 21
+    const DT_TEXTREL      = 22
+    const DT_JMPREL       = 23
+    const DT_BIND_NOW     = 24
+    const DT_INIT_ARRAY	  = 25
+    const DT_FINI_ARRAY	  = 26
+    const DT_INIT_ARRAYSZ =	27
+    const DT_FINI_ARRAYSZ =	28
+    const DT_RUNPATH	  = 29
+    const DT_FLAGS	      = 30
+    const DT_ENCODING     = 32
+    const OLD_DT_LOOS     = 0x60000000
+    const DT_LOOS         = 0x6000000d
+    const DT_HIOS         = 0x6ffff000
+    const DT_VALRNGLO     = 0x6ffffd00
+    const DT_VALRNGHI     = 0x6ffffdff
+    const DT_ADDRRNGLO    = 0x6ffffe00
+    const DT_ADDRRNGHI    = 0x6ffffeff
+    const DT_VERSYM       = 0x6ffffff0
+    const DT_RELACOUNT    = 0x6ffffff9
+    const DT_RELCOUNT     = 0x6ffffffa
+    const DT_FLAGS_1      = 0x6ffffffb
+    const DT_VERDEF       = 0x6ffffffc
+    const DT_VERDEFNUM    = 0x6ffffffd
+    const DT_VERNEED      = 0x6ffffffe
+    const DT_VERNEEDNUM   = 0x6fffffff
+    const OLD_DT_HIOS     = 0x6fffffff
+    const DT_LOPROC       = 0x70000000
+    const DT_HIPROC       = 0x7fffffff
 end
