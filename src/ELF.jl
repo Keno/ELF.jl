@@ -25,6 +25,7 @@ module ELF
     end
     Base.eof(handle::ELFHandle) = eof(handle.io)
 
+
     abstract ELFHeader
     abstract ELFSectionHeader <: Section{ELFHandle}
     abstract ELFSymtabEntry
@@ -426,6 +427,10 @@ module ELF
         printentry(io,"Strtab Index",dec(header.e_shstrndx))
     end
 
+    ObjFileBase.isrelocatable(handle::ELFHandle) =
+        handle.file.header.e_type == ELF.ET_REL
+
+
     immutable SectionRef <: ObjFileBase.SectionRef{ELFHandle}
         handle::ELFHandle
         header::ELFSectionHeader
@@ -448,6 +453,7 @@ module ELF
     immutable Sections
         handle::ELFHandle
     end
+    ObjFileBase.mangle_sname(h::ELFHandle, name) = string(".", name)
     endof(s::Sections) = s.handle.file.header.e_shnum
     length(s::Sections) = endof(s)
     function getindex(s::Sections, n)
