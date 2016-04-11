@@ -453,6 +453,7 @@ module ELF
     immutable Sections
         handle::ELFHandle
     end
+    ObjFileBase.Sections(handle::ELFHandle) = Sections(handle)
     ObjFileBase.mangle_sname(h::ELFHandle, name) = string(".", name)
     endof(s::Sections) = s.handle.file.header.e_shnum
     length(s::Sections) = endof(s)
