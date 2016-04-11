@@ -515,6 +515,20 @@ module ELF
     isdebug(x) = false
     isundef(x) = deref(x).st_shndx == SHN_UNDEF
 
+    function symbolvalue(sym, sections)
+        value = deref(sym).st_value
+        shndx = deref(sym).st_shndx
+        if shndx != ELF.SHN_UNDEF && shndx < ELF.SHN_LORESERVE
+            sec = sections[shndx+1]
+            # What to do here depends on the object kind. Shared Libraries and
+            # executable's st_value's are virtual addresses
+            if deref(sec).sh_addr != 0 && handle(sec).file.header.e_type == ET_REL
+                value += deref(sec).sh_addr
+            end
+        end
+        value
+    end
+
     # Symbol printing stuff
     function showcompact(io::IO, x::SymbolRef; shstrtab = load_strtab(handle(x)), strtab = StrTab(x.syms), sections = Sections(handle(x)))
         print(io,'[')
