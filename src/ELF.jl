@@ -450,9 +450,10 @@ module ELF
     call(::Type{ObjFileBase.StrTab},strtab::SectionRef) = StrTab(strtab)
     strtab_lookup(s::StrTab,index) = strtab_lookup(s.strtab.handle,s.strtab.header,index)
 
-    immutable Sections
+    immutable Sections <: ObjFileBase.Sections
         handle::ELFHandle
     end
+    ObjFileBase.handle(sections::Sections) = sections.handle
     ObjFileBase.Sections(handle::ELFHandle) = Sections(handle)
     ObjFileBase.mangle_sname(h::ELFHandle, name) = string(".", name)
     endof(s::Sections) = s.handle.file.header.e_shnum
