@@ -23,6 +23,7 @@ module ELF
         start::Int
         file::ELFFile
     end
+    __init__() = push!(ObjFileBase.ObjHandles, ELFHandle)
     Base.eof(handle::ELFHandle) = eof(handle.io)
 
 
