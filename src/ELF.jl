@@ -10,7 +10,8 @@ module ELF
     import Base: sizeof
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
         sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
-        getSectionLoadAddress, sectionname, load_strtab, handle, symname
+        getSectionLoadAddress, sectionname, load_strtab, handle, symname, isundef,
+        symbolvalue
     import StructIO: unpack
 
     abstract ELFFile
@@ -25,7 +26,7 @@ module ELF
     end
     __init__() = push!(ObjFileBase.ObjHandles, ELFHandle)
     Base.eof(handle::ELFHandle) = eof(handle.io)
-
+    ObjFileBase.handle(handle::ELFHandle) = handle
 
     abstract ELFHeader
     abstract ELFSectionHeader <: Section{ELFHandle}
@@ -522,7 +523,8 @@ module ELF
     islocal(x) = !isglobal(x)
     isweak(x) = (st_bind(x.st_info) & STB_WEAK) != 0
     isdebug(x) = false
-    isundef(x) = deref(x).st_shndx == SHN_UNDEF
+    isundef(x::ELFSymtabEntry) = x.st_shndx == SHN_UNDEF
+    isundef(x::SymbolRef) = isundef(deref(x))
 
     function symbolvalue(sym, sections)
         value = deref(sym).st_value
