@@ -621,7 +621,7 @@ module ELF
     function Relocations(sec::SectionRef)
         is64 = isa(sec.handle.file,ELF64.File)
         isRela = sec.header.sh_type == SHT_RELA
-        Relocations{is64 ? (isRela ? ELF64.Rela : ELF64.Rel) : (isRela ? ELF32.Rela : ELF32.Rel)}(sec)
+        Relocations{is64 ? (isRela ? ELF64.Rela : ELF64.Rel) : (isRela ? ELF32.Rela : ELF32.Rel),typeof(sec)}(sec)
     end
 
     immutable RelocationRef{T <: ELFRel} <: ObjFileBase.RelocationRef{ELFHandle}
