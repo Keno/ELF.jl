@@ -433,10 +433,11 @@ module ELF
         handle.file.header.e_type == ELF.ET_REL
 
 
-    immutable SectionRef <: ObjFileBase.SectionRef{ELFHandle}
-        handle::ELFHandle
-        header::ELFSectionHeader
+    immutable SectionRef{T<:ELFHandle, hdr} <: ObjFileBase.SectionRef{ELFHandle}
+        handle::T
+        header::hdr
     end
+    @Base.pure ObjFileBase.SectionRef{T<:ELFHandle}(::Type{T}) = SectionRef{T}
     handle(sec::SectionRef) = sec.handle
     sectionname(sec::SectionRef; strtab=load_strtab(sec.handle), errstrtab = true) = sectionname(sec.header; strtab = strtab, errstrtab = true)
     show(io::IO, sr::SectionRef; strtab = load_strtab(sr.handle), sections = nothing) = show(io,sr.header; strtab = strtab, sections = sections)
@@ -446,21 +447,21 @@ module ELF
     Base.seekstart(s::SectionRef) = seek(handle(s), sectionoffset(s))
     Base.read(s::SectionRef) = (seek(s,0); read(s.handle.io, sectionsize(s)))
 
-    immutable StrTab <: ObjFileBase.StrTab
-        strtab::SectionRef
+    immutable StrTab{T<:SectionRef} <: ObjFileBase.StrTab
+        strtab::T
     end
     call(::Type{ObjFileBase.StrTab},strtab::SectionRef) = StrTab(strtab)
     strtab_lookup(s::StrTab,index) = strtab_lookup(s.strtab.handle,s.strtab.header,index)
 
-    immutable Sections <: ObjFileBase.Sections
-        handle::ELFHandle
+    immutable Sections{T<:ELFHandle} <: ObjFileBase.Sections
+        handle::T
     end
     ObjFileBase.handle(sections::Sections) = sections.handle
     ObjFileBase.Sections(handle::ELFHandle) = Sections(handle)
     ObjFileBase.mangle_sname(h::ELFHandle, name) = string(".", name)
     endof(s::Sections) = s.handle.file.header.e_shnum
     length(s::Sections) = endof(s)
-    function getindex(s::Sections, n)
+    function getindex{T}(s::Sections{T}, n)
         @assert 0 < n <= length(s)
         file = s.handle.file
         seek(s.handle,file.header.e_shoff + (n-1)*file.header.e_shentsize)
@@ -468,8 +469,8 @@ module ELF
     end
 
     load_strtab(h::ELFHandle) = StrTab(Sections(h)[h.file.header.e_shstrndx+1])
-    load_strtab(s::Sections) = StrTab(s[s.handle.file.header.e_shstrndx+1])
-    load_strtab(s::SectionRef) = StrTab(s)
+    load_strtab{T}(s::Sections{T}) = StrTab(s[s.handle.file.header.e_shstrndx+1])
+    load_strtab{T}(s::SectionRef{T}) = StrTab(s)
     const strtab = load_strtab
 
     start(s::Sections) = 1
@@ -488,8 +489,8 @@ module ELF
     info_sec(sec::SectionRef) = Sections(sec.handle)[sec.header.sh_info+1]
 
     # # Symbols
-    immutable Symbols
-        symtab::SectionRef
+    immutable Symbols{T<: SectionRef}
+        symtab::T
     end
     handle(s::Symbols) = handle(s.symtab)
     Symbols(h::ELFHandle) =
@@ -614,8 +615,8 @@ module ELF
     length(s::Symbols) = endof(s)
 
     # Access to relocations
-    immutable Relocations{T <: ELFRel}
-        sec::SectionRef
+    immutable Relocations{T <: ELFRel, S <: SectionRef}
+        sec::S
     end
     function Relocations(sec::SectionRef)
         is64 = isa(sec.handle.file,ELF64.File)
