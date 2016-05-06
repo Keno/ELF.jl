@@ -432,6 +432,8 @@ module ELF
     ObjFileBase.isrelocatable(handle::ELFHandle) =
         handle.file.header.e_type == ELF.ET_REL
 
+    ObjFileBase.isexecutable(handle::ELFHandle) =
+        handle.file.header.e_type == ELF.ET_EXEC
 
     immutable SectionRef{T<:ELFHandle, hdr} <: ObjFileBase.SectionRef{ELFHandle}
         handle::T
@@ -536,6 +538,11 @@ module ELF
             # executable's st_value's are virtual addresses
             if deref(sec).sh_addr != 0 && handle(sec).file.header.e_type == ET_REL
                 value += deref(sec).sh_addr
+            end
+            if handle(sec).file.header.e_type == ET_EXEC
+                ph = ProgramHeaders(handle(sec))[3]
+                @assert ph.p_type == PT_LOAD
+                value -= ph.p_vaddr
             end
         end
         value
