@@ -3,7 +3,7 @@ using Base.Meta
 macro constants(array, stripprefix, expr)
     ret = Expr(:block)
     # Initialize the name lookup array
-    push!(ret.args,:(const $array = Dict{UInt32,ASCIIString}()))
+    push!(ret.args,:(const $array = Dict{UInt32,String}()))
     for e in expr.args
         if !isexpr(e,:const)
             continue

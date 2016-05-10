@@ -234,7 +234,7 @@ module ELF
         mag1 = read(io,UInt8)
         mag2 = read(io,UInt8)
         mag3 = read(io,UInt8)
-        if((mag0 != '\177') || (mag1 != 'E') || (mag2 != 'L') || (mag3 != 'F'))
+        if((mag0 != UInt32('\177')) || (mag1 != UInt32('E')) || (mag2 != UInt32('L')) || (mag3 != UInt32('F')))
             throw(ObjFileBase.MagicMismatch("Magic Number does not match"))
         end
         class = read(io,UInt8)
@@ -390,7 +390,7 @@ module ELF
                 printentry(io,"Last Local Idx",header.sh_info)
             end
         end
-        flags = ASCIIString[]
+        flags = String[]
         for (k,v) in SHF_FLAGS
             ((k&header.sh_flags) != 0) && push!(flags, v)
         end
@@ -700,7 +700,7 @@ module ELF
 
     function debugsections(io::IO,f::ELFFile)
         snames = names(io,f,f.sheaders)
-        sections = Dict{ASCIIString,ELFSectionHeader}()
+        sections = Dict{String,ELFSectionHeader}()
         for i in 1:length(snames)
             # Remove leading "."
             ind = findfirst(DEBUG_SECTIONS,snames[i][2:end])
@@ -744,7 +744,7 @@ module ELF
         sects = collect(Sections(h))
         strt = strtab(h)
         snames = map(s->sectionname(s.header;strtab=strt),sects)
-        sections = Dict{ASCIIString,SectionRef}()
+        sections = Dict{String,SectionRef}()
         for i in 1:length(snames)
             # remove leading "."
             ind = findfirst(ObjFileBase.DEBUG_SECTIONS,bytestring(snames[i])[2:end])
