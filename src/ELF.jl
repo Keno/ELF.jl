@@ -529,7 +529,7 @@ module ELF
     isundef(x::ELFSymtabEntry) = x.st_shndx == SHN_UNDEF
     isundef(x::SymbolRef) = isundef(deref(x))
 
-    function symbolvalue(sym, sections)
+    function symbolvalue(sym::Union{SymbolRef, ELFSymtabEntry}, sections)
         value = deref(sym).st_value
         shndx = deref(sym).st_shndx
         if shndx != ELF.SHN_UNDEF && shndx < ELF.SHN_LORESERVE
@@ -539,10 +539,13 @@ module ELF
             if deref(sec).sh_addr != 0 && handle(sec).file.header.e_type == ET_REL
                 value += deref(sec).sh_addr
             end
-            if handle(sec).file.header.e_type == ET_EXEC
-                ph = ProgramHeaders(handle(sec))[3]
-                @assert ph.p_type == PT_LOAD
-                value -= ph.p_vaddr
+            if handle(sec).file.header.e_type == ET_EXEC ||
+                 handle(sec).file.header.e_type == ET_DYN
+                for ph in ProgramHeaders(handle(sec))
+                    ph.p_type != PT_LOAD && continue
+                    value -= ph.p_vaddr
+                    break
+                end
             end
         end
         value
