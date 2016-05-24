@@ -750,7 +750,7 @@ module ELF
         sections = Dict{String,SectionRef}()
         for i in 1:length(snames)
             # remove leading "."
-            ind = findfirst(ObjFileBase.DEBUG_SECTIONS,bytestring(snames[i])[2:end])
+            ind = findfirst(ObjFileBase.DEBUG_SECTIONS,string(snames[i])[2:end])
             if ind != 0
                 sections[ObjFileBase.DEBUG_SECTIONS[ind]] = sects[i]
             end
