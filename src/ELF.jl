@@ -11,7 +11,7 @@ module ELF
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
         sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
         getSectionLoadAddress, sectionname, load_strtab, handle, symname, isundef,
-        symbolvalue
+        symbolvalue, symbolnum
     import StructIO: unpack
 
     abstract ELFFile
@@ -491,12 +491,14 @@ module ELF
     info_sec(sec::SectionRef) = Sections(sec.handle)[sec.header.sh_info+1]
 
     # # Symbols
-    immutable Symbols{T<: SectionRef}
+    immutable Symbols{T<: SectionRef} <: ObjFileBase.Symbols{ELFHandle}
         symtab::T
     end
+    ObjFileBase.Symbols(sec::SectionRef) = Symbols(sec)
     handle(s::Symbols) = handle(s.symtab)
     Symbols(h::ELFHandle) =
         Symbols(first(filter(x->sectionname(x) in (".dynsym",".symtab"),Sections(h))))
+    ObjFileBase.Symbols(h::ELFHandle) = Symbols(h)
     ObjFileBase.StrTab(symtab::Symbols) = StrTab(symtab)
     StrTab(symtab::Symbols) = StrTab(link_sec(symtab.symtab))
 
