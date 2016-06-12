@@ -504,7 +504,7 @@ module ELF
 
     immutable SymbolRef <: ObjFileBase.SymbolRef{ELFHandle}
         syms::Symbols
-        num::UInt16
+        num::UInt32
         offset::Int
         entry::ELFSymtabEntry
     end
@@ -522,7 +522,8 @@ module ELF
     end
 
     st_bind(st_info) = st_info>>4
-    st_type(st_info) = st_info & 0xf
+    st_type(st_info::Integer) = st_info & 0xf
+    st_type(x::SymbolRef) = st_type(deref(x))
     st_type(x::ELFSymtabEntry) = st_type(x.st_info)
     isglobal(x) = (st_bind(x.st_info) & STB_GLOBAL) != 0
     islocal(x) = !isglobal(x)
