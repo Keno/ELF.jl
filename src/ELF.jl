@@ -11,7 +11,7 @@ module ELF
     import ObjFileBase: readmeta, debugsections, deref, sectionoffset, sectionaddress,
         sectionsize, Section, endianness, replace_sections_from_memory, strtab_lookup,
         getSectionLoadAddress, sectionname, load_strtab, handle, symname, isundef,
-        symbolvalue, symbolnum
+        symbolvalue, symbolnum, intptr
     import StructIO: unpack
 
     abstract ELFFile
@@ -206,6 +206,8 @@ module ELF
         end
         print(io,")")
     end
+
+    intptr(h::ELFHandle) = isa(h.file, ELF32.File) ? UInt32 : UInt64
 
     for f in (:readuntil,:write)
         @eval $(f){T<:IO}(io::ELFHandle{T},args...) = $(f)(io.io,args...)
