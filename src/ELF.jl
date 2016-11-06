@@ -451,6 +451,8 @@ module ELF
     Base.seekstart(s::SectionRef) = seek(handle(s), sectionoffset(s))
     Base.read(s::SectionRef) = (seek(s,0); read(s.handle.io, sectionsize(s)))
 
+    ObjFileBase.isBSS(x::ELFSectionHeader) = x.sh_type == SHT_NOBITS
+
     immutable StrTab{T<:SectionRef} <: ObjFileBase.StrTab
         strtab::T
     end
@@ -534,7 +536,16 @@ module ELF
     isundef(x::ELFSymtabEntry) = x.st_shndx == SHN_UNDEF
     isundef(x::SymbolRef) = isundef(deref(x))
 
-    function symbolvalue(sym::Union{SymbolRef, ELFSymtabEntry}, sections)
+    function compute_first_ph_vaddr(h)
+        for ph in ProgramHeaders(h)
+            ph.p_type != PT_LOAD && continue
+            return ph.p_vaddr
+        end
+        return 0
+    end
+
+    function symbolvalue(sym::Union{SymbolRef, ELFSymtabEntry}, sections,
+            first_ph_vaddr=compute_first_ph_vaddr(handle(sections)))
         value = deref(sym).st_value
         shndx = deref(sym).st_shndx
         if shndx != ELF.SHN_UNDEF && shndx < ELF.SHN_LORESERVE
@@ -546,11 +557,7 @@ module ELF
             end
             if handle(sec).file.header.e_type == ET_EXEC ||
                  handle(sec).file.header.e_type == ET_DYN
-                for ph in ProgramHeaders(handle(sec))
-                    ph.p_type != PT_LOAD && continue
-                    value -= ph.p_vaddr
-                    break
-                end
+                value -= first_ph_vaddr
             end
         end
         value
