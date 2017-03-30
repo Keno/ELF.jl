@@ -786,4 +786,5 @@ module ELF
 
     # Other things
     include("relocate.jl")
+    include("precompile.jl")
 end
